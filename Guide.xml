@@ -1,0 +1,69 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<CodeBlockFile xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" Id="3158701e-29a8-47fc-9809-207e142e0400" Language="Lua" Name="Guide" Type="Component" Source="None" ModifyTime="2022-09-26T18:21:12.1422641+09:00">
+  <CoreVersion Major="0" Minor="2" />
+  <ScriptVersion Major="1" Minor="0" />
+  <Description />
+  <Properties>
+    <CodeBlockProperty Name="velocity" Type="number" DefaultValue="1" SyncDirection="None" />
+  </Properties>
+  <Methods>
+    <CodeBlockMethod Name="guide" ExecSpace="ClientOnly">
+      <Return Type="void" SyncDirection="None" />
+      <Arguments>
+        <CodeBlockProperty Name="target" Type="Vector3" DefaultValue="Vector3(0,0,0)" SyncDirection="None" />
+        <CodeBlockProperty Name="delta" Type="number" DefaultValue="0" SyncDirection="None" />
+      </Arguments>
+      <Code><![CDATA[
+if self._T.destination == nil then
+	self._T.destination = Vector2(0,0)
+end
+local norm =
+	 Vector2.Normalize(Vector2(target.x - self.Entity.TransformComponent.Position.x ,target.y - self.Entity.TransformComponent.Position.y))
+self._T.destination = norm
+]]></Code>
+    </CodeBlockMethod>
+    <CodeBlockMethod Name="OnUpdate" ExecSpace="ClientOnly">
+      <Return Type="void" SyncDirection="None" />
+      <Arguments>
+        <CodeBlockProperty Name="delta" Type="number" SyncDirection="None" />
+      </Arguments>
+      <Code><![CDATA[
+-- 프레임 주기 초기화
+if self._T.tick == nil then
+	self._T.tick = 0
+end
+-- 프레임당 거리 초기화
+if self._T.destination == nil then
+	self._T.destination = Vector2(0,0)
+end
+
+-- 프레임 주기당 업데이트될 자기 위치이동 변수
+self.Entity.TransformComponent.Position =
+self.Entity.TransformComponent.Position + Vector3(self._T.destination.x, self._T.destination.y, 0) * delta * self.velocity
+-- 프레임당 Tick 0이하 값이 되면 destination으로 추적
+self._T.tick = self._T.tick - delta
+if self._T.tick <= 0 then
+	-- Tick의 값을 넣어주어 서서히 움직이게 delta값을 더해준다
+	self._T.tick = self._T.tick + delta * 10
+	--------------------------------------------------------------------------------------
+	-- 아이템 이동
+	_TweenLogic:MoveTo(self.Entity, self._T.destination ,2 ,EaseType.BackEaseInOut)
+	
+	-- 아이템 블러링 
+	local spriteRenderer = self.Entity.SpriteRendererComponent
+    	local EraseItem = function(eraseDelta)
+    		spriteRenderer.Color.a = eraseDelta
+    	end
+	
+	local GetItem = _TweenLogic:MakeTween(spriteRenderer.Color.a, 0, 1.2, EaseType.Linear, EraseItem)
+    --tween.LoopType = TweenLoopType.PingPong
+    --tween.AutoDestroy = false
+    GetItem:Play()
+	---------------------------------------------------------------------------------------
+	--self:guide(_UserService.LocalPlayer.TransformComponent.Position,delta)
+end
+]]></Code>
+    </CodeBlockMethod>
+  </Methods>
+  <EntityEventHandlers />
+</CodeBlockFile>
